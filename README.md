@@ -33,8 +33,11 @@ financial data or concept (MCP fetch, manual input, or a concept to teach)
 Five scene kinds today: `price_line`, `candlestick`, `bar_comparison`, `kpi_counter`,
 and `whiteboard_explainer` (a narrated, hand-drawn-doodle-style explainer for financial
 concepts — compound interest, inflation, diversification, and the like — with
-per-beat voiceover synced via the `elevenlabs` skill). See `skills/fin-anim/SKILL.md`
-for the full spec the agent follows, and `examples/` for a sample data file per kind.
+per-beat voiceover synced via the `elevenlabs` skill). `whiteboard_explainer` draws from
+a 19-icon built-in vector library plus free CC0 SVG scenes (undraw.co) as its primary,
+always-reliable visuals — see "Adding a new whiteboard doodle icon" below. See
+`skills/fin-anim/SKILL.md` for the full spec the agent follows, and `examples/` for a
+sample data file per kind.
 
 ## Install
 
@@ -101,7 +104,7 @@ pytest tests/ -v
 
 ## Adding a new whiteboard doodle icon
 
-**Built-in vector icon** (free, path-traced by the hand, no generation step):
+**Built-in vector icon (preferred — free, instant, no environment risk):**
 
 1. Add an `_icon_<name>()` builder to `scripts/scenes/whiteboard_assets.py`, built from
    Manim primitives (`Circle`, `Rectangle`, `Line`, `Arc`, ...) — no external SVG/image
@@ -110,28 +113,34 @@ pytest tests/ -v
 3. Add the same name to `WHITEBOARD_ICONS` in `schema.py` — an assertion at import time
    checks these two lists stay in sync.
 
-**Generated PNG icon** (for a concept the primitives don't cover well, or a more
-polished look — wipe-revealed, not path-traced):
+**Multi-element SVG scene (second choice — a person + object + interaction, path-traced
+like a built-in icon, no generation step):**
+
+1. Grab a free CC0 illustration from [undraw.co](https://undraw.co) (or draw your own
+   simple multi-shape SVG) and save it under `assets/whiteboard_icons/`.
+2. Reference it with `"visual": "svg", "svg_path": "assets/whiteboard_icons/<name>.svg"`.
+
+**Generated PNG icon via Colab — optional/experimental, not the default.** After this
+repo's own Colab notebook broke three different ways across sessions (a model repo
+taken down, then a numpy/scipy ABI conflict, then a Pillow one from patching that fix),
+the project deliberately de-prioritized this path in favor of the two above. Only reach
+for it if you specifically want to try AI-generated icons and accept the Colab
+environment may need fresh debugging:
 
 1. Add its concept to `ICON_CONCEPTS` in `tools/colab_generate_icons.ipynb`.
 2. Run the notebook on Colab (free GPU tier), download `whiteboard_icons.zip`.
 3. Drop the PNG into `assets/whiteboard_icons/` and reference it with
    `"visual": "image", "image_path": "assets/whiteboard_icons/<name>.png"`.
 
-**Multi-element SVG scene** (a person + object + interaction, path-traced like a
-built-in icon):
+## Using a realistic hand instead of the stylized vector one (optional/experimental)
 
-1. Grab a free CC0 illustration from [undraw.co](https://undraw.co) (or draw your own
-   simple multi-shape SVG) and save it under `assets/whiteboard_icons/`.
-2. Reference it with `"visual": "svg", "svg_path": "assets/whiteboard_icons/<name>.svg"`.
-
-## Using a realistic hand instead of the stylized vector one
-
-Run the hand section of `tools/colab_generate_icons.ipynb` (same free Colab GPU flow),
-save the result as `assets/whiteboard_icons/hand.png`. Every beat's render picks it up
-automatically — no per-beat setting. If the pencil tip lands somewhere the hand doesn't
-quite track correctly, recalibrate `DEFAULT_PHOTO_HAND_TIP_FRACTION` in
-`whiteboard_assets.py` per the notebook's calibration cell.
+Same status as generated icons above — the stylized vector hand is the default for a
+reason (zero environment risk). If you still want to try it: run the hand section of
+`tools/colab_generate_icons.ipynb`, save the result as
+`assets/whiteboard_icons/hand.png`. Every beat's render picks it up automatically — no
+per-beat setting. If the pencil tip lands somewhere the hand doesn't quite track
+correctly, recalibrate `DEFAULT_PHOTO_HAND_TIP_FRACTION` in `whiteboard_assets.py` per
+the notebook's calibration cell.
 
 ## License
 

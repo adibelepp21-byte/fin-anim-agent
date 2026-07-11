@@ -79,9 +79,9 @@ def test_whiteboard_unknown_icon_raises():
     data = SceneData(
         kind="whiteboard_explainer",
         title="Bad Icon",
-        beats=[WhiteboardBeat(narration="...", visual="pie_chart", label="Nope")],
+        beats=[WhiteboardBeat(narration="...", visual="rocket_ship", label="Nope")],
     )
-    with pytest.raises(ValueError, match="unknown visual 'pie_chart'"):
+    with pytest.raises(ValueError, match="unknown visual 'rocket_ship'"):
         validate_scene_data(data)
 
 

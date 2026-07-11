@@ -69,39 +69,44 @@ script of 2–5 narrated "beats", each pairing one on-screen doodle with one spo
 1. **Write the script.** Break the concept into 2–5 beats. Each beat needs:
    - `narration` — the spoken line (a sentence or two, natural spoken English/whatever
      language the user wants narrated in).
-   - `visual` — one of:
-     - a built-in icon name: `dollar`, `arrow_up`, `arrow_down`, `clock`, `house`,
-       `piggy_bank`, `coin_stack`, `calculator`, `chart_bar`, `lightbulb`, `scale` —
-       drawn as vector shapes with the hand tracing each one's real path. Free, no
-       generation step, always available.
+   - `visual` — one of, **in this preference order**:
+     - a built-in icon name (19 available): `dollar`, `arrow_up`, `arrow_down`, `clock`,
+       `house`, `piggy_bank`, `coin_stack`, `calculator`, `chart_bar`, `lightbulb`,
+       `scale`, `briefcase`, `credit_card`, `graduation_cap`, `handshake`, `umbrella`,
+       `warning_triangle`, `bank`, `pie_chart` — drawn as vector shapes with the hand
+       tracing each one's real path. Free, no generation step, no GPU, no environment
+       to break — **this is the default and preferred path**. If none of these fit the
+       concept, prefer adding a new one (see Design notes below) over reaching for
+       `"image"`.
      - `"text"` — the `label` is handwritten by the same path-tracing hand.
-     - `"image"` — `image_path` points to a PNG under `assets/whiteboard_icons/`
-       generated with `tools/colab_generate_icons.ipynb` (free Colab GPU, no paid
-       credits). Use this when the user wants a specific concept none of the built-in
-       icons cover well, or wants a more detailed/polished look than the primitive
-       shapes give. The image is revealed with a wipe, not path-traced (see
-       `whiteboard_assets.py`'s docstring for why) — this is a deliberately different
-       reveal style, not a bug. `data_loader.py` fails fast with a clear error if
-       `image_path` doesn't exist, so generate the PNG first, then reference its real
-       saved path.
      - `"svg"` — `svg_path` points to a vector illustration, loaded as an
        `SVGMobject` and path-traced shape-by-shape just like a built-in icon (no
        separate reveal technique needed — an SVG already carries real vector paths).
-       Use this for a richer **scene** with several composed elements (a person, an
-       object, their interaction) in one beat: [undraw.co](https://undraw.co) is a
-       free CC0 illustration library (no attribution required, no generation step,
-       no credits) with exactly this kind of multi-element scene as ready SVG files —
-       download one, save it, and reference its path. `data_loader.py` fails fast if
-       `svg_path` doesn't exist, same as `image_path`.
+       **Second choice** for a richer **scene** with several composed elements (a
+       person, an object, their interaction) in one beat:
+       [undraw.co](https://undraw.co) is a free CC0 illustration library (no
+       attribution required, no generation step, no credits, no environment
+       dependency) with exactly this kind of multi-element scene as ready SVG
+       files — download one, save it, and reference its path. `data_loader.py`
+       fails fast if `svg_path` doesn't exist.
+     - `"image"` — **optional/experimental, not the default.** `image_path` points to
+       a PNG generated with `tools/colab_generate_icons.ipynb` (Stable Diffusion on
+       Colab's free GPU). Only reach for this if the user explicitly wants to try
+       AI-generated icons and accepts that Colab's environment has repeatedly broken
+       across sessions (model repo takedowns, numpy/scipy/Pillow ABI conflicts — see
+       the notebook's changelog for the specific fixes applied so far). Don't propose
+       it as the solution for "I want a nicer icon" — propose a new built-in vector
+       icon or an `"svg"` scene first. The image is revealed with a wipe, not
+       path-traced (see `whiteboard_assets.py`'s docstring for why).
    - `label` — a short on-screen caption (a few words, NOT the full narration — the
      narration is heard, the label is a glance-able caption under the doodle). Required
      for every visual kind, including `"image"`/`"svg"`.
 
-**The hand itself** is swappable too: if `assets/whiteboard_icons/hand.png` exists (a
-realistic hand-and-pencil PNG, also generated free via `tools/colab_generate_icons.ipynb`),
-every beat's render uses it automatically instead of the default stylized vector hand —
-no per-beat setting. Point the user at that notebook's hand section when they want a more
-realistic look; don't propose a paid image-generation tool for it.
+**The hand itself** defaults to the stylized vector sketch. `make_photo_hand_cursor()`
+(a realistic hand-and-pencil PNG, also from `tools/colab_generate_icons.ipynb`) exists
+and is auto-used if `assets/whiteboard_icons/hand.png` happens to be present, but per
+the same decision above, don't proactively steer the user toward generating one —
+it carries the same Colab-fragility tradeoff as `"image"` icons.
 2. **Generate narration audio per beat** with the `elevenlabs` skill, one audio file per
    beat (not one file for the whole script — each beat needs its own file so its
    duration can drive that beat's on-screen timing).
@@ -208,18 +213,23 @@ After a successful render, offer (don't force) natural follow-ups:
   view of a stock move alongside its `price_line`; or a `whiteboard_explainer` beat
   that sets up a concept before a `price_line` shows the real numbers).
 - If a `whiteboard_explainer` beat's built-in icon doesn't quite fit the concept,
-  offer to generate a custom one via `tools/colab_generate_icons.ipynb` (free Colab
-  GPU) instead of forcing a built-in icon that's a poor match.
+  the default move is adding a new vector icon (see Design notes below) or reaching
+  for an `"svg"` scene from undraw.co — **not** the Colab notebook (see below).
 
-## Generating custom icons (`tools/colab_generate_icons.ipynb`)
+## Generating custom icons via Colab — optional/experimental, not the default
 
-This runs Stable Diffusion locally on Colab's free GPU tier — no paid API/MCP
-credits. Point the user to it rather than proposing an MCP image-generation tool for
-this: `whiteboard_explainer` icons are a recurring content-pipeline asset (not a
-one-off), so a free, repeatable, user-owned generation step fits better than a
-per-call paid one. This session can prepare/edit the notebook but cannot run it (no
-GPU here) — the user runs it themselves and downloads the PNGs. Once generated, they
-go in `assets/whiteboard_icons/` and get referenced via `visual: "image"` (Step 1b).
+`tools/colab_generate_icons.ipynb` runs Stable Diffusion on Colab's free GPU tier —
+no paid API/MCP credits, which is why it exists at all. But after repeated,
+different environment failures across sessions (the `runwayml/stable-diffusion-v1-5`
+model repo being pulled from Hugging Face, a numpy/scipy ABI mismatch, then a Pillow
+ABI mismatch from patching that fix), the user explicitly decided to de-prioritize
+this path in favor of the always-reliable vector icons and `"svg"` scenes. Don't
+proactively suggest the Colab route for "make this icon nicer" — only use it if the
+user specifically asks to try AI-generated icons again, and set the expectation that
+Colab's shared-environment dependency conflicts may need fresh debugging each time
+(the notebook's changelog documents the fixes applied so far, but a new Colab base
+image update could introduce another one). This session can prepare/edit the
+notebook but cannot run it (no GPU here) — the user runs it themselves.
 
 ## Design notes for future scene kinds
 
@@ -234,12 +244,14 @@ every scene reads from the same `SceneData`.
 
 `whiteboard_explainer` specifically also has `scripts/scenes/whiteboard_assets.py`
 (colors, both hand mobjects — `make_hand_cursor()` vector and
-`make_photo_hand_cursor()` photo — the vector doodle icon library, the
-path-tracing helper used by vector icons/text/SVG scenes, and the wipe-reveal
-helper for `"image"` PNGs) — adding a new built-in vector icon means adding one
-`_icon_<name>()` builder there, registering it in `_ICON_BUILDERS`, and adding the
-same name to `WHITEBOARD_ICONS` in `schema.py` (there's an assertion at import time
-that these two lists match). Adding a new *generated* icon doesn't touch any of
-that — just add its concept to `ICON_CONCEPTS` in `tools/colab_generate_icons.ipynb`,
-generate it, and reference the PNG via `visual: "image"`. A new `"svg"` scene needs
+`make_photo_hand_cursor()` photo — the vector doodle icon library (19 icons and
+counting), the path-tracing helper used by vector icons/text/SVG scenes, and the
+wipe-reveal helper for `"image"` PNGs) — adding a new built-in vector icon means
+adding one `_icon_<name>()` builder there, registering it in `_ICON_BUILDERS`, and
+adding the same name to `WHITEBOARD_ICONS` in `schema.py` (there's an assertion at
+import time that these two lists match). **This is the preferred way to cover a new
+concept** — free, instant, no environment risk. Adding a new *generated* icon (the
+de-prioritized Colab path) doesn't touch any of that — just add its concept to
+`ICON_CONCEPTS` in `tools/colab_generate_icons.ipynb`, generate it, and reference the
+PNG via `visual: "image"`. A new `"svg"` scene needs
 no code changes at all — just a saved `.svg` file and a beat referencing it.

@@ -49,6 +49,7 @@ from manim import (
     Arc,
     Circle,
     Create,
+    Dot,
     Ellipse,
     Line,
     Rectangle,
@@ -341,6 +342,90 @@ def _icon_scale() -> VGroup:
     return VGroup(pole, beam, left_pan, right_pan, left_bowl, right_bowl)
 
 
+def _icon_briefcase() -> VGroup:
+    body = RoundedRectangle(width=1.8, height=1.2, corner_radius=0.1, color=MARKER_COLOR, stroke_width=8)
+    handle = Rectangle(width=0.5, height=0.3, color=MARKER_COLOR, stroke_width=6)
+    handle.next_to(body, UP, buff=-0.05)
+    clasp = Line(LEFT * 0.9, RIGHT * 0.9, color=MARKER_COLOR, stroke_width=6)
+    clasp.move_to(body.get_center())
+    return VGroup(handle, body, clasp)
+
+
+def _icon_credit_card() -> VGroup:
+    card = RoundedRectangle(width=2.0, height=1.3, corner_radius=0.12, color=MARKER_COLOR, stroke_width=8)
+    stripe = Rectangle(width=1.9, height=0.25, color=MARKER_COLOR, stroke_width=5)
+    stripe.move_to(card.get_top() + DOWN * 0.35)
+    numbers = VGroup(
+        *[
+            Line(ORIGIN, RIGHT * 0.25, color=MARKER_COLOR, stroke_width=5).shift(RIGHT * i * 0.4)
+            for i in range(4)
+        ]
+    )
+    numbers.move_to(card.get_bottom() + UP * 0.3 + LEFT * 0.6)
+    return VGroup(card, stripe, numbers)
+
+
+def _icon_graduation_cap() -> VGroup:
+    top = Square(side_length=1.6, color=MARKER_COLOR, stroke_width=8).rotate(PI / 4)
+    top.stretch(0.5, dim=1)
+    band = Ellipse(width=0.7, height=0.32, color=MARKER_COLOR, stroke_width=6)
+    band.move_to(top.get_center() + DOWN * 0.35)
+    tassel = Line(top.get_right(), top.get_right() + DOWN * 0.6 + LEFT * 0.1, color=MARKER_COLOR, stroke_width=5)
+    return VGroup(top, band, tassel)
+
+
+def _icon_handshake() -> VGroup:
+    left_arm = Rectangle(width=1.0, height=0.35, color=MARKER_COLOR, stroke_width=8)
+    left_arm.rotate(0.3).move_to(LEFT * 0.55)
+    right_arm = Rectangle(width=1.0, height=0.35, color=MARKER_COLOR, stroke_width=8)
+    right_arm.rotate(-0.3).move_to(RIGHT * 0.55)
+    grip = Circle(radius=0.22, color=MARKER_COLOR, stroke_width=6)
+    return VGroup(left_arm, right_arm, grip)
+
+
+def _icon_umbrella() -> VGroup:
+    canopy = Arc(radius=1.0, start_angle=0, angle=PI, color=MARKER_COLOR, stroke_width=8)
+    canopy.rotate(PI)
+    pole = Line(ORIGIN, DOWN * 1.3, color=MARKER_COLOR, stroke_width=6)
+    pole.move_to(canopy.get_center() + DOWN * 0.65)
+    hook = Arc(radius=0.15, start_angle=PI / 2, angle=-PI, color=MARKER_COLOR, stroke_width=5)
+    hook.move_to(pole.get_bottom() + RIGHT * 0.15)
+    return VGroup(canopy, pole, hook)
+
+
+def _icon_warning_triangle() -> VGroup:
+    tri = Triangle(color=MARKER_COLOR, stroke_width=8).scale(1.3)
+    mark_line = Line(UP * 0.15, UP * 0.5, color=MARKER_COLOR, stroke_width=6)
+    mark_dot = Dot(radius=0.06, color=MARKER_COLOR, fill_color=MARKER_COLOR, fill_opacity=1)
+    mark_dot.move_to(DOWN * 0.05)
+    return VGroup(tri, mark_line, mark_dot)
+
+
+def _icon_bank() -> VGroup:
+    roof = Triangle(color=MARKER_COLOR, stroke_width=8).scale(1.1)
+    base = Rectangle(width=1.8, height=0.15, color=MARKER_COLOR, stroke_width=6)
+    base.next_to(roof, DOWN, buff=0.6)
+    columns = VGroup(
+        *[
+            Line(UP * 0.6, DOWN * 0.6, color=MARKER_COLOR, stroke_width=6).move_to(
+                RIGHT * (i * 0.45 - 0.675) + DOWN * 0.05
+            )
+            for i in range(4)
+        ]
+    )
+    steps = Line(LEFT * 1.0, RIGHT * 1.0, color=MARKER_COLOR, stroke_width=6)
+    steps.next_to(base, DOWN, buff=0.05)
+    return VGroup(roof, columns, base, steps)
+
+
+def _icon_pie_chart() -> VGroup:
+    circle = Circle(radius=1.0, color=MARKER_COLOR, stroke_width=8)
+    slice1 = Line(ORIGIN, UP * 1.0, color=MARKER_COLOR, stroke_width=6)
+    slice2 = Line(ORIGIN, RIGHT * 0.95 + DOWN * 0.3, color=MARKER_COLOR, stroke_width=6)
+    slice3 = Line(ORIGIN, LEFT * 0.8 + DOWN * 0.6, color=MARKER_COLOR, stroke_width=6)
+    return VGroup(circle, slice1, slice2, slice3)
+
+
 _ICON_BUILDERS = {
     "dollar": _icon_dollar,
     "arrow_up": _icon_arrow_up,
@@ -353,6 +438,14 @@ _ICON_BUILDERS = {
     "chart_bar": _icon_chart_bar,
     "lightbulb": _icon_lightbulb,
     "scale": _icon_scale,
+    "briefcase": _icon_briefcase,
+    "credit_card": _icon_credit_card,
+    "graduation_cap": _icon_graduation_cap,
+    "handshake": _icon_handshake,
+    "umbrella": _icon_umbrella,
+    "warning_triangle": _icon_warning_triangle,
+    "bank": _icon_bank,
+    "pie_chart": _icon_pie_chart,
 }
 
 assert set(_ICON_BUILDERS) == WHITEBOARD_ICONS, "icon builders and schema.WHITEBOARD_ICONS drifted apart"

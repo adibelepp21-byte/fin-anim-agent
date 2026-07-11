@@ -30,6 +30,14 @@ WHITEBOARD_ICONS = frozenset(
         "chart_bar",
         "lightbulb",
         "scale",
+        "briefcase",
+        "credit_card",
+        "graduation_cap",
+        "handshake",
+        "umbrella",
+        "warning_triangle",
+        "bank",
+        "pie_chart",
     }
 )
 

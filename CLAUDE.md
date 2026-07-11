@@ -24,10 +24,12 @@ adibelepp21-byte/fin-anim-agent.
   `data: SceneData = None` slot set by `build.py`, not via `__init__`, since Manim's
   own scene construction doesn't accept constructor args.
 - `skills/fin-anim/scripts/scenes/whiteboard_assets.py` — colors, `make_hand_cursor()`
-  (the stylized hand-and-pen mobject) and `make_photo_hand_cursor()` (a realistic
-  hand-and-pencil PNG, sharing the same `tip_position` contract so both are drop-in
-  interchangeable), the vector doodle icon library (one `_icon_<name>()` builder per
-  icon, all built from Manim primitives — no external SVG/image assets),
+  (the stylized hand-and-pen mobject, the default) and `make_photo_hand_cursor()` (a
+  realistic hand-and-pencil PNG, optional/experimental — see Rules, sharing the same
+  `tip_position` contract so both are drop-in interchangeable), the vector doodle icon
+  library (19 icons, one `_icon_<name>()` builder per icon, all built from Manim
+  primitives — no external SVG/image assets — this is the primary, preferred way to
+  cover a new concept),
   `draw_icon_with_hand()` (flattens a vector/text/SVG beat's visual into its leaf
   shapes and draws them one at a time with the hand's pen tip tracing each leaf's own
   `point_from_proportion(alpha)` path — an `SVGMobject`'s children are ordinary
@@ -114,6 +116,17 @@ adibelepp21-byte/fin-anim-agent.
   be a repeatable YouTube content pipeline. `"image"` beats using a wipe reveal instead
   of path-tracing is the accepted tradeoff for this (a raster PNG has no vector path to
   trace) — not a bug to unify with the vector path either.
+- **The Colab notebook (`"image"` icons, `make_photo_hand_cursor`) is optional/
+  experimental, not the default — by a second explicit user decision, made after the
+  notebook broke three different ways across sessions** (the `runwayml` model repo
+  being pulled from Hugging Face; a numpy/scipy ABI mismatch from a follow-up fix; a
+  Pillow ABI mismatch from the fix to *that*). The default, always-reliable path for
+  new financial-concept visuals is now: (1) a new built-in vector icon in
+  `whiteboard_assets.py`, (2) a `"svg"` scene from undraw.co. Don't proactively suggest
+  the Colab route when a user wants a nicer/different icon — offer a vector icon or
+  SVG scene first, and only mention Colab if they specifically ask to try AI generation
+  again (with the expectation that its shared-environment dependency conflicts may
+  need fresh debugging).
 - The realistic photo hand (`make_photo_hand_cursor`) and `"svg"` scene mode exist
   because of a specific reference video the user analyzed (a professional
   VideoScribe/Doodly-style whiteboard video) — see git history around the `"svg"`
