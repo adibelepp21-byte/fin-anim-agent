@@ -72,11 +72,17 @@ pytest tests/ -v
 - `skills/fin-anim/scripts/schema.py` — the data contract (`SceneData`) every scene reads
 - `skills/fin-anim/scripts/data_loader.py` — loads + validates a JSON data file
 - `skills/fin-anim/scripts/scenes/` — one Manim `Scene` subclass per scene kind
-- `skills/fin-anim/scripts/scenes/whiteboard_assets.py` — shared doodle-icon library,
-  marker-cursor mobject, and draw-while-tracking-cursor helper for `whiteboard_explainer`
+- `skills/fin-anim/scripts/scenes/whiteboard_assets.py` — shared hand-and-pen mobject,
+  the vector doodle icon library, the path-tracing draw helper (vector icons/text), and
+  the wipe-reveal helper (for `"image"` PNGs) used by `whiteboard_explainer`
 - `skills/fin-anim/scripts/build.py` — CLI: JSON in, MP4 out
 - `skills/fin-anim/scripts/audio_duration.py` — measures a narration clip's real length
   via ffprobe, for timing `whiteboard_explainer` beats to their voiceover
+- `tools/colab_generate_icons.ipynb` — generates whiteboard doodle PNGs for free on
+  Colab's GPU tier (local Stable Diffusion, no paid API/MCP credits) — see
+  `assets/whiteboard_icons/README.md`
+- `assets/whiteboard_icons/` — generated PNGs referenced by `whiteboard_explainer`
+  beats with `visual: "image"`
 - `examples/` — one sample data file per scene kind
 - `tests/` — schema/validation tests (fast, no Manim import)
 
@@ -92,12 +98,22 @@ pytest tests/ -v
 
 ## Adding a new whiteboard doodle icon
 
+**Built-in vector icon** (free, path-traced by the hand, no generation step):
+
 1. Add an `_icon_<name>()` builder to `scripts/scenes/whiteboard_assets.py`, built from
    Manim primitives (`Circle`, `Rectangle`, `Line`, `Arc`, ...) — no external SVG/image
    assets, keeps the skill self-contained.
 2. Register it in `_ICON_BUILDERS` in the same file.
 3. Add the same name to `WHITEBOARD_ICONS` in `schema.py` — an assertion at import time
    checks these two lists stay in sync.
+
+**Generated PNG icon** (for a concept the primitives don't cover well, or a more
+polished look — wipe-revealed, not path-traced):
+
+1. Add its concept to `ICON_CONCEPTS` in `tools/colab_generate_icons.ipynb`.
+2. Run the notebook on Colab (free GPU tier), download `whiteboard_icons.zip`.
+3. Drop the PNG into `assets/whiteboard_icons/` and reference it with
+   `"visual": "image", "image_path": "assets/whiteboard_icons/<name>.png"`.
 
 ## License
 

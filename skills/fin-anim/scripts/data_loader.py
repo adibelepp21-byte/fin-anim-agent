@@ -41,10 +41,18 @@ def validate_scene_data(data: SceneData) -> None:
 
 def _validate_whiteboard_beats(beats) -> None:
     for i, beat in enumerate(beats):
-        if beat.visual != "text" and beat.visual not in WHITEBOARD_ICONS:
+        if beat.visual == "image":
+            if not beat.image_path:
+                raise ValueError(f"beats[{i}]: visual 'image' requires a non-empty 'image_path'")
+            if not Path(beat.image_path).exists():
+                raise ValueError(
+                    f"beats[{i}]: image_path {beat.image_path!r} does not exist — generate it "
+                    "first (see tools/colab_generate_icons.ipynb) and use its real saved path"
+                )
+        elif beat.visual != "text" and beat.visual not in WHITEBOARD_ICONS:
             raise ValueError(
                 f"beats[{i}]: unknown visual {beat.visual!r}. "
-                f"Expected 'text' or one of {sorted(WHITEBOARD_ICONS)}"
+                f"Expected 'text', 'image', or one of {sorted(WHITEBOARD_ICONS)}"
             )
         if not beat.label:
             raise ValueError(

@@ -25,9 +25,14 @@ ALL_KINDS = {"price_line", "candlestick", "bar_comparison", "kpi_counter", "whit
         "kpi_counter.json",
         "bar_comparison.json",
         "whiteboard_explainer.json",
+        "whiteboard_explainer_image.json",
     ],
 )
-def test_bundled_examples_are_valid(filename):
+def test_bundled_examples_are_valid(filename, monkeypatch):
+    # whiteboard_explainer_image.json's image_path is repo-root-relative (matching
+    # how --data/--output are already documented as repo-root-relative in README/
+    # SKILL.md) — chdir so the example is valid regardless of the invoking cwd.
+    monkeypatch.chdir(EXAMPLES_DIR.parent)
     data = load_scene_data(EXAMPLES_DIR / filename)
     assert data.title
     assert data.kind in ALL_KINDS
@@ -93,5 +98,42 @@ def test_whiteboard_text_visual_is_allowed():
         kind="whiteboard_explainer",
         title="Text Beat",
         beats=[WhiteboardBeat(narration="...", visual="text", label="Just a caption")],
+    )
+    validate_scene_data(data)  # should not raise
+
+
+def test_whiteboard_image_missing_path_raises():
+    data = SceneData(
+        kind="whiteboard_explainer",
+        title="Image Beat",
+        beats=[WhiteboardBeat(narration="...", visual="image", label="Caption", image_path="")],
+    )
+    with pytest.raises(ValueError, match="visual 'image' requires a non-empty 'image_path'"):
+        validate_scene_data(data)
+
+
+def test_whiteboard_image_nonexistent_path_raises():
+    data = SceneData(
+        kind="whiteboard_explainer",
+        title="Image Beat",
+        beats=[
+            WhiteboardBeat(
+                narration="...", visual="image", label="Caption", image_path="/no/such/file.png"
+            )
+        ],
+    )
+    with pytest.raises(ValueError, match="does not exist"):
+        validate_scene_data(data)
+
+
+def test_whiteboard_image_existing_path_is_allowed(tmp_path):
+    icon_path = tmp_path / "icon.png"
+    icon_path.write_bytes(b"not a real png, existence is all validate_scene_data checks")
+    data = SceneData(
+        kind="whiteboard_explainer",
+        title="Image Beat",
+        beats=[
+            WhiteboardBeat(narration="...", visual="image", label="Caption", image_path=str(icon_path))
+        ],
     )
     validate_scene_data(data)  # should not raise

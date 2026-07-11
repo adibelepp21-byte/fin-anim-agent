@@ -57,12 +57,20 @@ class BarItem:
 
 @dataclass
 class WhiteboardBeat:
-    """One narrated beat of a whiteboard_explainer scene: draw `visual` (an icon
-    name from WHITEBOARD_ICONS, or "text"), speak `narration`, hold for `duration`
-    seconds, then erase before the next beat.
+    """One narrated beat of a whiteboard_explainer scene: draw `visual`, speak
+    `narration`, hold for `duration` seconds, then erase before the next beat.
+
+    `visual` is one of:
+    - an icon name from WHITEBOARD_ICONS — drawn as Manim vector primitives,
+      with the hand tracing each shape's real path (see whiteboard_assets.py).
+    - `"text"` — the `label` is handwritten by the same path-tracing hand.
+    - `"image"` — `image_path` (a locally generated PNG, e.g. from the Colab
+      icon-generation notebook in tools/) is revealed with a left-to-right wipe
+      synced to the hand, since a raster image has no vector path to trace.
 
     `label` is the short on-screen caption (a few words) — not the narration
-    itself, which is meant to be heard, not read.
+    itself, which is meant to be heard, not read. Required for every visual
+    kind, including "image" (shown as a handwritten caption under the image).
 
     `audio_path` and `duration` are normally filled in by the agent after
     generating narration audio (e.g. via the elevenlabs skill) and measuring its
@@ -72,6 +80,7 @@ class WhiteboardBeat:
     narration: str = ""
     visual: str = "text"
     label: str = ""
+    image_path: str = ""
     audio_path: str = ""
     duration: float = 3.0
 

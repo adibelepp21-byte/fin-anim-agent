@@ -16,6 +16,13 @@ that leaf's own `point_from_proportion(alpha)` — real per-stroke tracing, not 
 bounding-box sweep. The same function draws "text" beats too, since Manim's
 Text is itself a VGroup of one-path-per-glyph submobjects — for a short label
 this looks like the hand actually handwriting it letter by letter.
+
+A beat can also use visual "image": a locally generated PNG (see
+tools/colab_generate_icons.ipynb) has no vector path to trace, so
+`reveal_image_with_hand` reveals it with a left-to-right wipe instead — an
+opaque cover rectangle shrinks away rather than the image being "drawn". This
+is a deliberate, different-looking reveal from the vector path-tracing above,
+not a bug: raster and vector visuals can't share one animation technique.
 """
 from __future__ import annotations
 
@@ -122,6 +129,44 @@ def draw_icon_with_hand(scene, icon, hand: VGroup, total_run_time: float) -> Non
             mob.tip_position = target
 
         scene.play(Create(leaf), UpdateFromAlphaFunc(hand, update_hand), run_time=per_leaf_time)
+
+
+def reveal_image_with_hand(scene, image, hand: VGroup, run_time: float) -> None:
+    """Reveals a raster `ImageMobject` with a left-to-right wipe synced to the
+    hand, instead of Create()-based path tracing — a PNG has no vector path to
+    trace, so this covers it with an opaque whiteboard-colored rectangle and
+    shrinks that cover away from left to right (a standard, renderer-agnostic
+    Manim wipe: no pixel-array/cache manipulation, no dependency on ImageMobject
+    internals).
+    """
+    from manim import RIGHT as _RIGHT  # local import: keeps the shared import list above lean
+    from manim import Rectangle as _Rectangle
+
+    cover = _Rectangle(
+        width=image.width + 0.02,
+        height=image.height + 0.02,
+        fill_color=WHITEBOARD_COLOR,
+        fill_opacity=1,
+        stroke_width=0,
+    )
+    cover.move_to(image.get_center())
+    scene.add(image, cover)
+
+    start = image.get_corner(UP + LEFT) + TIP_NUDGE
+    end = image.get_corner(DOWN + RIGHT) + TIP_NUDGE
+    hand.shift(start - hand.tip_position)
+    hand.tip_position = start
+
+    def update(mob, alpha):
+        remaining = max(image.width * (1 - alpha), 0.001)
+        mob.stretch_to_fit_width(remaining)
+        mob.align_to(image, _RIGHT)
+        target = start + (end - start) * alpha
+        hand.shift(target - hand.tip_position)
+        hand.tip_position = target
+
+    scene.play(UpdateFromAlphaFunc(cover, update), run_time=run_time)
+    scene.remove(cover)
 
 
 def build_icon(name: str) -> VGroup:

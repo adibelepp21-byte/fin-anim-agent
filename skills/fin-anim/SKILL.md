@@ -69,12 +69,24 @@ script of 2–5 narrated "beats", each pairing one on-screen doodle with one spo
 1. **Write the script.** Break the concept into 2–5 beats. Each beat needs:
    - `narration` — the spoken line (a sentence or two, natural spoken English/whatever
      language the user wants narrated in).
-   - `visual` — either `"text"` or one of the built-in icon names: `dollar`, `arrow_up`,
-     `arrow_down`, `clock`, `house`, `piggy_bank`, `coin_stack`, `calculator`,
-     `chart_bar`, `lightbulb`, `scale`. Pick the icon that matches the beat's idea (e.g.
-     `piggy_bank` for saving, `clock` for time/growth, `scale` for risk vs. reward).
+   - `visual` — one of:
+     - a built-in icon name: `dollar`, `arrow_up`, `arrow_down`, `clock`, `house`,
+       `piggy_bank`, `coin_stack`, `calculator`, `chart_bar`, `lightbulb`, `scale` —
+       drawn as vector shapes with the hand tracing each one's real path. Free, no
+       generation step, always available.
+     - `"text"` — the `label` is handwritten by the same path-tracing hand.
+     - `"image"` — `image_path` points to a PNG under `assets/whiteboard_icons/`
+       generated with `tools/colab_generate_icons.ipynb` (free Colab GPU, no paid
+       credits). Use this when the user wants a specific concept none of the built-in
+       icons cover well, or wants a more detailed/polished look than the primitive
+       shapes give. The image is revealed with a wipe, not path-traced (see
+       `whiteboard_assets.py`'s docstring for why) — this is a deliberately different
+       reveal style, not a bug. `data_loader.py` fails fast with a clear error if
+       `image_path` doesn't exist, so generate the PNG first, then reference its real
+       saved path.
    - `label` — a short on-screen caption (a few words, NOT the full narration — the
-     narration is heard, the label is a glance-able caption under the doodle).
+     narration is heard, the label is a glance-able caption under the doodle). Required
+     for every visual kind, including `"image"`.
 2. **Generate narration audio per beat** with the `elevenlabs` skill, one audio file per
    beat (not one file for the whole script — each beat needs its own file so its
    duration can drive that beat's on-screen timing).
@@ -131,6 +143,14 @@ kind are in `examples/`. Minimal `price_line` example:
       "label": "Time + Growth",
       "audio_path": "/tmp/beat_02.mp3",
       "duration": 4.0
+    },
+    {
+      "narration": "That's the real power of starting early.",
+      "visual": "image",
+      "image_path": "assets/whiteboard_icons/piggy_bank.png",
+      "label": "Start Early",
+      "audio_path": "/tmp/beat_03.mp3",
+      "duration": 4.0
     }
   ]
 }
@@ -164,6 +184,19 @@ After a successful render, offer (don't force) natural follow-ups:
 - A different scene `kind` on the same content (e.g. also render the `kpi_counter`
   view of a stock move alongside its `price_line`; or a `whiteboard_explainer` beat
   that sets up a concept before a `price_line` shows the real numbers).
+- If a `whiteboard_explainer` beat's built-in icon doesn't quite fit the concept,
+  offer to generate a custom one via `tools/colab_generate_icons.ipynb` (free Colab
+  GPU) instead of forcing a built-in icon that's a poor match.
+
+## Generating custom icons (`tools/colab_generate_icons.ipynb`)
+
+This runs Stable Diffusion locally on Colab's free GPU tier — no paid API/MCP
+credits. Point the user to it rather than proposing an MCP image-generation tool for
+this: `whiteboard_explainer` icons are a recurring content-pipeline asset (not a
+one-off), so a free, repeatable, user-owned generation step fits better than a
+per-call paid one. This session can prepare/edit the notebook but cannot run it (no
+GPU here) — the user runs it themselves and downloads the PNGs. Once generated, they
+go in `assets/whiteboard_icons/` and get referenced via `visual: "image"` (Step 1b).
 
 ## Design notes for future scene kinds
 
@@ -177,8 +210,11 @@ register it in `SCENE_CLASSES` in `build.py`. Don't invent a second data format 
 every scene reads from the same `SceneData`.
 
 `whiteboard_explainer` specifically also has `scripts/scenes/whiteboard_assets.py`
-(colors, the marker-cursor mobject, the doodle icon library, and the
-draw-while-tracking-cursor helper) — adding a new doodle icon means adding one
-`_icon_<name>()` builder there, registering it in `_ICON_BUILDERS`, and adding the same
-name to `WHITEBOARD_ICONS` in `schema.py` (there's an assertion at import time that
-these two lists match).
+(colors, the hand-and-pen mobject, the vector doodle icon library, the
+path-tracing helper for vector icons/text, and the wipe-reveal helper for `"image"`
+PNGs) — adding a new built-in vector icon means adding one `_icon_<name>()` builder
+there, registering it in `_ICON_BUILDERS`, and adding the same name to
+`WHITEBOARD_ICONS` in `schema.py` (there's an assertion at import time that these two
+lists match). Adding a new *generated* icon doesn't touch any of that — just add its
+concept to `ICON_CONCEPTS` in `tools/colab_generate_icons.ipynb`, generate it, and
+reference the PNG via `visual: "image"`.

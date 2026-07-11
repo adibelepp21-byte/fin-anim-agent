@@ -3,7 +3,7 @@
 Classic whiteboard-video rhythm: draw something while it's being talked about,
 hold it on screen for the rest of the narration, wipe it, draw the next thing.
 """
-from manim import DOWN, UP, Create, FadeOut, Scene, Text, VGroup
+from manim import DOWN, UP, Create, FadeOut, Group, ImageMobject, Scene, Text, VGroup
 
 from schema import SceneData
 from scenes.whiteboard_assets import (
@@ -12,6 +12,7 @@ from scenes.whiteboard_assets import (
     build_icon,
     draw_icon_with_hand,
     make_hand_cursor,
+    reveal_image_with_hand,
 )
 
 HANDWRITING_FONT = "Kalam"  # a handwriting Google Font if installed; Pango silently
@@ -43,7 +44,6 @@ class WhiteboardExplainerScene(Scene):
         hand = make_hand_cursor()
 
         for beat in data.beats:
-            visual = self._build_visual(beat)
             # Drawing spans virtually the whole beat so the hand is still
             # visibly writing/drawing for as long as the narration is talking,
             # rather than finishing quickly and sitting still through the rest
@@ -55,7 +55,11 @@ class WhiteboardExplainerScene(Scene):
                 self.add_sound(beat.audio_path, time_offset=0)
 
             self.add(hand)
-            draw_icon_with_hand(self, visual, hand, total_run_time=draw_time)
+            if beat.visual == "image":
+                visual = self._play_image_beat(beat, hand, draw_time)
+            else:
+                visual = self._build_visual(beat)
+                draw_icon_with_hand(self, visual, hand, total_run_time=draw_time)
             self.remove(hand)
 
             if hold_time > 0:
@@ -64,6 +68,9 @@ class WhiteboardExplainerScene(Scene):
             self.play(FadeOut(visual), run_time=0.4)
 
     def _build_visual(self, beat) -> VGroup:
+        """Builds (but does not animate) the vector visual for "text" or an
+        icon-name beat. Image beats are handled separately by _play_image_beat,
+        since ImageMobject can't join a VGroup of VMobjects."""
         if beat.visual == "text":
             body = Text(beat.label, font_size=36, color=MARKER_COLOR, font=HANDWRITING_FONT)
             if body.width > 10:
@@ -75,3 +82,19 @@ class WhiteboardExplainerScene(Scene):
         label = Text(beat.label, font_size=32, color=MARKER_COLOR, font=HANDWRITING_FONT)
         label.next_to(icon, DOWN, buff=0.5)
         return VGroup(icon, label)
+
+    def _play_image_beat(self, beat, hand, draw_time: float) -> Group:
+        """Reveals beat.image_path with a wipe, then handwrites its label —
+        split 65/35 of draw_time between the two, both traced by the same hand."""
+        image = ImageMobject(beat.image_path)
+        if image.width > 6:
+            image.scale_to_fit_width(6)
+        image.shift(UP * 0.6)
+        label = Text(beat.label, font_size=32, color=MARKER_COLOR, font=HANDWRITING_FONT)
+        label.next_to(image, DOWN, buff=0.5)
+
+        image_time = draw_time * 0.65
+        label_time = draw_time - image_time
+        reveal_image_with_hand(self, image, hand, run_time=image_time)
+        draw_icon_with_hand(self, VGroup(label), hand, total_run_time=label_time)
+        return Group(image, label)

@@ -1,0 +1,21 @@
+{
+  "kind": "whiteboard_explainer",
+  "title": "Image Mode Example",
+  "subtitle": "",
+  "source": "example data",
+  "beats": [
+    {
+      "narration": "This beat uses a generated PNG instead of a built-in vector icon.",
+      "visual": "image",
+      "image_path": "assets/whiteboard_icons/example_placeholder.png",
+      "label": "Generated Icon",
+      "duration": 4.0
+    },
+    {
+      "narration": "Vector icons and generated images can mix freely in the same script.",
+      "visual": "clock",
+      "label": "Vector Icon",
+      "duration": 3.5
+    }
+  ]
+}
