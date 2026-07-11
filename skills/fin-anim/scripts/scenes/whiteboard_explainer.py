@@ -3,7 +3,9 @@
 Classic whiteboard-video rhythm: draw something while it's being talked about,
 hold it on screen for the rest of the narration, wipe it, draw the next thing.
 """
-from manim import DOWN, UP, Create, FadeOut, Group, ImageMobject, Scene, Text, VGroup
+from pathlib import Path
+
+from manim import DOWN, UP, Create, FadeOut, Group, ImageMobject, SVGMobject, Scene, Text, VGroup
 
 from schema import SceneData
 from scenes.whiteboard_assets import (
@@ -12,11 +14,20 @@ from scenes.whiteboard_assets import (
     build_icon,
     draw_icon_with_hand,
     make_hand_cursor,
+    make_photo_hand_cursor,
     reveal_image_with_hand,
 )
 
 HANDWRITING_FONT = "Kalam"  # a handwriting Google Font if installed; Pango silently
 # substitutes a default font if it isn't, so this never crashes on a bare system.
+
+# Conventional path for a generated realistic hand-and-pencil PNG (see
+# tools/colab_generate_icons.ipynb). If present, it replaces the stylized
+# vector hand for every beat in the render — no per-beat opt-in needed, since
+# both hand mobjects expose the same tip_position contract (see
+# whiteboard_assets.py). Path is relative to the caller's cwd, matching how
+# --data/--output/image_path are already documented as repo-root-relative.
+PHOTO_HAND_PATH = "assets/whiteboard_icons/hand.png"
 
 
 class WhiteboardExplainerScene(Scene):
@@ -41,7 +52,7 @@ class WhiteboardExplainerScene(Scene):
         self.wait(0.5)
         self.play(FadeOut(title), run_time=0.5)
 
-        hand = make_hand_cursor()
+        hand = make_photo_hand_cursor(PHOTO_HAND_PATH) if Path(PHOTO_HAND_PATH).exists() else make_hand_cursor()
 
         for beat in data.beats:
             # Drawing spans virtually the whole beat so the hand is still
@@ -57,6 +68,8 @@ class WhiteboardExplainerScene(Scene):
             self.add(hand)
             if beat.visual == "image":
                 visual = self._play_image_beat(beat, hand, draw_time)
+            elif beat.visual == "svg":
+                visual = self._play_svg_beat(beat, hand, draw_time)
             else:
                 visual = self._build_visual(beat)
                 draw_icon_with_hand(self, visual, hand, total_run_time=draw_time)
@@ -69,8 +82,10 @@ class WhiteboardExplainerScene(Scene):
 
     def _build_visual(self, beat) -> VGroup:
         """Builds (but does not animate) the vector visual for "text" or an
-        icon-name beat. Image beats are handled separately by _play_image_beat,
-        since ImageMobject can't join a VGroup of VMobjects."""
+        icon-name beat. Image/SVG beats are handled separately, since
+        ImageMobject can't join a VGroup of VMobjects (SVGMobject can, but is
+        built as its own scaled+labeled group in _play_svg_beat instead, to
+        keep this method's contract — pure vector primitives — simple)."""
         if beat.visual == "text":
             body = Text(beat.label, font_size=36, color=MARKER_COLOR, font=HANDWRITING_FONT)
             if body.width > 10:
@@ -98,3 +113,18 @@ class WhiteboardExplainerScene(Scene):
         reveal_image_with_hand(self, image, hand, run_time=image_time)
         draw_icon_with_hand(self, VGroup(label), hand, total_run_time=label_time)
         return Group(image, label)
+
+    def _play_svg_beat(self, beat, hand, draw_time: float) -> VGroup:
+        """Traces beat.svg_path (e.g. a free CC0 undraw.co scene) shape-by-shape
+        with the hand, exactly like a built-in icon — an SVGMobject is already a
+        VGroup of real vector paths, so draw_icon_with_hand needs no changes."""
+        svg = SVGMobject(beat.svg_path)
+        if svg.width > 7:
+            svg.scale_to_fit_width(7)
+        svg.shift(UP * 0.5)
+        label = Text(beat.label, font_size=32, color=MARKER_COLOR, font=HANDWRITING_FONT)
+        label.next_to(svg, DOWN, buff=0.4)
+
+        visual = VGroup(svg, label)
+        draw_icon_with_hand(self, visual, hand, total_run_time=draw_time)
+        return visual

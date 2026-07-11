@@ -84,9 +84,24 @@ script of 2–5 narrated "beats", each pairing one on-screen doodle with one spo
        reveal style, not a bug. `data_loader.py` fails fast with a clear error if
        `image_path` doesn't exist, so generate the PNG first, then reference its real
        saved path.
+     - `"svg"` — `svg_path` points to a vector illustration, loaded as an
+       `SVGMobject` and path-traced shape-by-shape just like a built-in icon (no
+       separate reveal technique needed — an SVG already carries real vector paths).
+       Use this for a richer **scene** with several composed elements (a person, an
+       object, their interaction) in one beat: [undraw.co](https://undraw.co) is a
+       free CC0 illustration library (no attribution required, no generation step,
+       no credits) with exactly this kind of multi-element scene as ready SVG files —
+       download one, save it, and reference its path. `data_loader.py` fails fast if
+       `svg_path` doesn't exist, same as `image_path`.
    - `label` — a short on-screen caption (a few words, NOT the full narration — the
      narration is heard, the label is a glance-able caption under the doodle). Required
-     for every visual kind, including `"image"`.
+     for every visual kind, including `"image"`/`"svg"`.
+
+**The hand itself** is swappable too: if `assets/whiteboard_icons/hand.png` exists (a
+realistic hand-and-pencil PNG, also generated free via `tools/colab_generate_icons.ipynb`),
+every beat's render uses it automatically instead of the default stylized vector hand —
+no per-beat setting. Point the user at that notebook's hand section when they want a more
+realistic look; don't propose a paid image-generation tool for it.
 2. **Generate narration audio per beat** with the `elevenlabs` skill, one audio file per
    beat (not one file for the whole script — each beat needs its own file so its
    duration can drive that beat's on-screen timing).
@@ -151,6 +166,14 @@ kind are in `examples/`. Minimal `price_line` example:
       "label": "Start Early",
       "audio_path": "/tmp/beat_03.mp3",
       "duration": 4.0
+    },
+    {
+      "narration": "Two people shaking hands after a deal, for instance.",
+      "visual": "svg",
+      "svg_path": "assets/whiteboard_icons/handshake.svg",
+      "label": "A Deal Made",
+      "audio_path": "/tmp/beat_04.mp3",
+      "duration": 4.5
     }
   ]
 }
@@ -210,11 +233,13 @@ register it in `SCENE_CLASSES` in `build.py`. Don't invent a second data format 
 every scene reads from the same `SceneData`.
 
 `whiteboard_explainer` specifically also has `scripts/scenes/whiteboard_assets.py`
-(colors, the hand-and-pen mobject, the vector doodle icon library, the
-path-tracing helper for vector icons/text, and the wipe-reveal helper for `"image"`
-PNGs) — adding a new built-in vector icon means adding one `_icon_<name>()` builder
-there, registering it in `_ICON_BUILDERS`, and adding the same name to
-`WHITEBOARD_ICONS` in `schema.py` (there's an assertion at import time that these two
-lists match). Adding a new *generated* icon doesn't touch any of that — just add its
-concept to `ICON_CONCEPTS` in `tools/colab_generate_icons.ipynb`, generate it, and
-reference the PNG via `visual: "image"`.
+(colors, both hand mobjects — `make_hand_cursor()` vector and
+`make_photo_hand_cursor()` photo — the vector doodle icon library, the
+path-tracing helper used by vector icons/text/SVG scenes, and the wipe-reveal
+helper for `"image"` PNGs) — adding a new built-in vector icon means adding one
+`_icon_<name>()` builder there, registering it in `_ICON_BUILDERS`, and adding the
+same name to `WHITEBOARD_ICONS` in `schema.py` (there's an assertion at import time
+that these two lists match). Adding a new *generated* icon doesn't touch any of
+that — just add its concept to `ICON_CONCEPTS` in `tools/colab_generate_icons.ipynb`,
+generate it, and reference the PNG via `visual: "image"`. A new `"svg"` scene needs
+no code changes at all — just a saved `.svg` file and a beat referencing it.

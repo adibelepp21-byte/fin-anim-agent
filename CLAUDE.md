@@ -16,31 +16,38 @@ adibelepp21-byte/fin-anim-agent.
   (the canonical icon-name list) and `WhiteboardBeat`.
 - `skills/fin-anim/scripts/data_loader.py` — loads a JSON file, validates it against
   `REQUIRED_FIELDS` for its `kind` before any rendering starts, plus kind-specific
-  checks (e.g. `whiteboard_explainer` beats: known icon name or `"image"` with an
-  `image_path` that actually exists on disk, non-empty `label`).
+  checks (e.g. `whiteboard_explainer` beats: known icon name, or `"image"`/`"svg"`
+  with an `image_path`/`svg_path` that actually exists on disk, non-empty `label`).
 - `skills/fin-anim/scripts/scenes/` — one `manim.Scene` subclass per scene kind
   (`price_line`, `candlestick`, `bar_comparison`, `kpi_counter`,
   `whiteboard_explainer`). Each takes its data via a class-level
   `data: SceneData = None` slot set by `build.py`, not via `__init__`, since Manim's
   own scene construction doesn't accept constructor args.
 - `skills/fin-anim/scripts/scenes/whiteboard_assets.py` — colors, `make_hand_cursor()`
-  (the stylized hand-and-pen mobject), the vector doodle icon library (one
-  `_icon_<name>()` builder per icon, all built from Manim primitives — no external
-  SVG/image assets), `draw_icon_with_hand()` (flattens a vector/text beat's visual into
-  its leaf shapes and draws them one at a time with the hand's pen tip tracing each
-  leaf's own `point_from_proportion(alpha)` path), and `reveal_image_with_hand()` (wipes
-  a raster `"image"` PNG into view instead, since it has no vector path to trace).
-  Imports manim, so it stays out of `tests/` (see Rules).
+  (the stylized hand-and-pen mobject) and `make_photo_hand_cursor()` (a realistic
+  hand-and-pencil PNG, sharing the same `tip_position` contract so both are drop-in
+  interchangeable), the vector doodle icon library (one `_icon_<name>()` builder per
+  icon, all built from Manim primitives — no external SVG/image assets),
+  `draw_icon_with_hand()` (flattens a vector/text/SVG beat's visual into its leaf
+  shapes and draws them one at a time with the hand's pen tip tracing each leaf's own
+  `point_from_proportion(alpha)` path — an `SVGMobject`'s children are ordinary
+  VMobjects, so this needed no changes to support `"svg"` beats), and
+  `reveal_image_with_hand()` (wipes a raster `"image"` PNG into view instead, since it
+  has no vector path to trace). Imports manim, so it stays out of `tests/` (see Rules).
 - `skills/fin-anim/scripts/build.py` — CLI orchestrator: JSON data in, MP4 out.
 - `skills/fin-anim/scripts/audio_duration.py` — thin `ffprobe` wrapper; measures a
   narration clip's real duration so `whiteboard_explainer` beats can be timed to their
   voiceover instead of guessed from word count.
-- `tools/colab_generate_icons.ipynb` — generates `assets/whiteboard_icons/*.png` for
-  free on Colab's GPU tier (local Stable Diffusion via `diffusers`, no paid API/MCP
-  credits). This session can edit the notebook but cannot run it (no GPU in this
-  environment) — the user runs it on Colab and downloads the PNGs themselves.
-- `assets/whiteboard_icons/` — generated PNGs, referenced by beats with
-  `visual: "image"` and `image_path` pointing here.
+- `tools/colab_generate_icons.ipynb` — generates `assets/whiteboard_icons/*.png`
+  (doodle icons) and `hand.png` (realistic hand-and-pencil) for free on Colab's GPU
+  tier (local Stable Diffusion via `diffusers`, `rembg` for real background removal —
+  not a color threshold). This session can edit the notebook but cannot run it (no
+  GPU in this environment) — the user runs it on Colab and downloads the PNGs
+  themselves.
+- `assets/whiteboard_icons/` — generated PNGs (`visual: "image"`/`image_path`), the
+  optional `hand.png` (auto-detected by `whiteboard_explainer.py`'s `PHOTO_HAND_PATH`,
+  no schema field needed), and saved `.svg` scenes (`visual: "svg"`/`svg_path`, e.g.
+  free CC0 illustrations from undraw.co).
 - `examples/` — one valid data file per scene kind, used by both manual testing and
   `tests/test_schema_and_loader.py`.
 - `tests/` — schema/validation tests only. Deliberately excludes Manim rendering (no
@@ -107,3 +114,17 @@ adibelepp21-byte/fin-anim-agent.
   be a repeatable YouTube content pipeline. `"image"` beats using a wipe reveal instead
   of path-tracing is the accepted tradeoff for this (a raster PNG has no vector path to
   trace) — not a bug to unify with the vector path either.
+- The realistic photo hand (`make_photo_hand_cursor`) and `"svg"` scene mode exist
+  because of a specific reference video the user analyzed (a professional
+  VideoScribe/Doodly-style whiteboard video) — see git history around the `"svg"`
+  visual mode's introduction for the full comparison. Matching that reference's exact
+  licensed clip-art depth (thousands of pre-made scenes) isn't achievable free/local;
+  the free-and-local approximations landed on are Colab-generated icons/hand plus CC0
+  `undraw.co` illustrations loaded as real vector SVGs. Don't propose the commercial
+  clip-art route without the user raising it first — the whole point was avoiding that
+  cost.
+- `PHOTO_HAND_PATH` in `whiteboard_explainer.py` is a plain module constant
+  (`"assets/whiteboard_icons/hand.png"`), not a `SceneData`/`WhiteboardBeat` field —
+  the hand is a whole-render choice, not a per-beat one, so it doesn't belong in the
+  data schema. Don't add a per-beat "hand style" field without a real per-beat use
+  case for it.

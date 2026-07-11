@@ -26,12 +26,14 @@ ALL_KINDS = {"price_line", "candlestick", "bar_comparison", "kpi_counter", "whit
         "bar_comparison.json",
         "whiteboard_explainer.json",
         "whiteboard_explainer_image.json",
+        "whiteboard_explainer_svg.json",
     ],
 )
 def test_bundled_examples_are_valid(filename, monkeypatch):
-    # whiteboard_explainer_image.json's image_path is repo-root-relative (matching
-    # how --data/--output are already documented as repo-root-relative in README/
-    # SKILL.md) — chdir so the example is valid regardless of the invoking cwd.
+    # whiteboard_explainer_image.json/whiteboard_explainer_svg.json's paths are
+    # repo-root-relative (matching how --data/--output are already documented as
+    # repo-root-relative in README/SKILL.md) — chdir so the examples are valid
+    # regardless of the invoking cwd.
     monkeypatch.chdir(EXAMPLES_DIR.parent)
     data = load_scene_data(EXAMPLES_DIR / filename)
     assert data.title
@@ -135,5 +137,38 @@ def test_whiteboard_image_existing_path_is_allowed(tmp_path):
         beats=[
             WhiteboardBeat(narration="...", visual="image", label="Caption", image_path=str(icon_path))
         ],
+    )
+    validate_scene_data(data)  # should not raise
+
+
+def test_whiteboard_svg_missing_path_raises():
+    data = SceneData(
+        kind="whiteboard_explainer",
+        title="SVG Beat",
+        beats=[WhiteboardBeat(narration="...", visual="svg", label="Caption", svg_path="")],
+    )
+    with pytest.raises(ValueError, match="visual 'svg' requires a non-empty 'svg_path'"):
+        validate_scene_data(data)
+
+
+def test_whiteboard_svg_nonexistent_path_raises():
+    data = SceneData(
+        kind="whiteboard_explainer",
+        title="SVG Beat",
+        beats=[
+            WhiteboardBeat(narration="...", visual="svg", label="Caption", svg_path="/no/such/file.svg")
+        ],
+    )
+    with pytest.raises(ValueError, match="does not exist"):
+        validate_scene_data(data)
+
+
+def test_whiteboard_svg_existing_path_is_allowed(tmp_path):
+    svg_path = tmp_path / "scene.svg"
+    svg_path.write_text("<svg></svg>")
+    data = SceneData(
+        kind="whiteboard_explainer",
+        title="SVG Beat",
+        beats=[WhiteboardBeat(narration="...", visual="svg", label="Caption", svg_path=str(svg_path))],
     )
     validate_scene_data(data)  # should not raise

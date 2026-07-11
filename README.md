@@ -72,17 +72,20 @@ pytest tests/ -v
 - `skills/fin-anim/scripts/schema.py` — the data contract (`SceneData`) every scene reads
 - `skills/fin-anim/scripts/data_loader.py` — loads + validates a JSON data file
 - `skills/fin-anim/scripts/scenes/` — one Manim `Scene` subclass per scene kind
-- `skills/fin-anim/scripts/scenes/whiteboard_assets.py` — shared hand-and-pen mobject,
-  the vector doodle icon library, the path-tracing draw helper (vector icons/text), and
-  the wipe-reveal helper (for `"image"` PNGs) used by `whiteboard_explainer`
+- `skills/fin-anim/scripts/scenes/whiteboard_assets.py` — both hand mobjects
+  (`make_hand_cursor()` stylized vector, `make_photo_hand_cursor()` realistic photo),
+  the vector doodle icon library, the path-tracing draw helper (shared by vector
+  icons/text/`"svg"` scenes), and the wipe-reveal helper (for `"image"` PNGs) used by
+  `whiteboard_explainer`
 - `skills/fin-anim/scripts/build.py` — CLI: JSON in, MP4 out
 - `skills/fin-anim/scripts/audio_duration.py` — measures a narration clip's real length
   via ffprobe, for timing `whiteboard_explainer` beats to their voiceover
-- `tools/colab_generate_icons.ipynb` — generates whiteboard doodle PNGs for free on
-  Colab's GPU tier (local Stable Diffusion, no paid API/MCP credits) — see
-  `assets/whiteboard_icons/README.md`
-- `assets/whiteboard_icons/` — generated PNGs referenced by `whiteboard_explainer`
-  beats with `visual: "image"`
+- `tools/colab_generate_icons.ipynb` — generates whiteboard doodle PNGs *and* a
+  realistic hand-and-pencil PNG for free on Colab's GPU tier (local Stable Diffusion,
+  no paid API/MCP credits) — see `assets/whiteboard_icons/README.md`
+- `assets/whiteboard_icons/` — generated PNGs (`visual: "image"`), the optional
+  `hand.png` (auto-used by every beat if present), and any saved `.svg` scenes
+  (`visual: "svg"` — e.g. free CC0 illustrations from [undraw.co](https://undraw.co))
 - `examples/` — one sample data file per scene kind
 - `tests/` — schema/validation tests (fast, no Manim import)
 
@@ -114,6 +117,21 @@ polished look — wipe-revealed, not path-traced):
 2. Run the notebook on Colab (free GPU tier), download `whiteboard_icons.zip`.
 3. Drop the PNG into `assets/whiteboard_icons/` and reference it with
    `"visual": "image", "image_path": "assets/whiteboard_icons/<name>.png"`.
+
+**Multi-element SVG scene** (a person + object + interaction, path-traced like a
+built-in icon):
+
+1. Grab a free CC0 illustration from [undraw.co](https://undraw.co) (or draw your own
+   simple multi-shape SVG) and save it under `assets/whiteboard_icons/`.
+2. Reference it with `"visual": "svg", "svg_path": "assets/whiteboard_icons/<name>.svg"`.
+
+## Using a realistic hand instead of the stylized vector one
+
+Run the hand section of `tools/colab_generate_icons.ipynb` (same free Colab GPU flow),
+save the result as `assets/whiteboard_icons/hand.png`. Every beat's render picks it up
+automatically — no per-beat setting. If the pencil tip lands somewhere the hand doesn't
+quite track correctly, recalibrate `DEFAULT_PHOTO_HAND_TIP_FRACTION` in
+`whiteboard_assets.py` per the notebook's calibration cell.
 
 ## License
 

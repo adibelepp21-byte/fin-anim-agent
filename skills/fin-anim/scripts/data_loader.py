@@ -49,10 +49,18 @@ def _validate_whiteboard_beats(beats) -> None:
                     f"beats[{i}]: image_path {beat.image_path!r} does not exist — generate it "
                     "first (see tools/colab_generate_icons.ipynb) and use its real saved path"
                 )
+        elif beat.visual == "svg":
+            if not beat.svg_path:
+                raise ValueError(f"beats[{i}]: visual 'svg' requires a non-empty 'svg_path'")
+            if not Path(beat.svg_path).exists():
+                raise ValueError(
+                    f"beats[{i}]: svg_path {beat.svg_path!r} does not exist — download/save it "
+                    "first (e.g. a free CC0 illustration from undraw.co) and use its real saved path"
+                )
         elif beat.visual != "text" and beat.visual not in WHITEBOARD_ICONS:
             raise ValueError(
                 f"beats[{i}]: unknown visual {beat.visual!r}. "
-                f"Expected 'text', 'image', or one of {sorted(WHITEBOARD_ICONS)}"
+                f"Expected 'text', 'image', 'svg', or one of {sorted(WHITEBOARD_ICONS)}"
             )
         if not beat.label:
             raise ValueError(

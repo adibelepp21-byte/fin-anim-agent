@@ -1,0 +1,21 @@
+{
+  "kind": "whiteboard_explainer",
+  "title": "Scene Mode Example",
+  "subtitle": "",
+  "source": "example data",
+  "beats": [
+    {
+      "narration": "This beat uses a multi-element SVG scene instead of a single icon.",
+      "visual": "svg",
+      "svg_path": "assets/whiteboard_icons/example_scene.svg",
+      "label": "A Simple Scene",
+      "duration": 4.5
+    },
+    {
+      "narration": "Vector icons, generated images, and SVG scenes can all mix in one script.",
+      "visual": "lightbulb",
+      "label": "Vector Icon",
+      "duration": 3.5
+    }
+  ]
+}

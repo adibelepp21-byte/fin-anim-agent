@@ -67,10 +67,16 @@ class WhiteboardBeat:
     - `"image"` — `image_path` (a locally generated PNG, e.g. from the Colab
       icon-generation notebook in tools/) is revealed with a left-to-right wipe
       synced to the hand, since a raster image has no vector path to trace.
+    - `"svg"` — `svg_path` (a vector illustration, e.g. a free CC0 scene from
+      undraw.co, or anything else with real paths) is loaded as an
+      `SVGMobject` and traced shape-by-shape by the same path-tracing hand as
+      the built-in icons — an SVG scene can carry several composed elements
+      (a person, an object, their interaction) in one file, so this is the
+      route to a richer "scene" beat without a multi-element beat schema.
 
     `label` is the short on-screen caption (a few words) — not the narration
     itself, which is meant to be heard, not read. Required for every visual
-    kind, including "image" (shown as a handwritten caption under the image).
+    kind, including "image"/"svg" (shown as a handwritten caption under it).
 
     `audio_path` and `duration` are normally filled in by the agent after
     generating narration audio (e.g. via the elevenlabs skill) and measuring its
@@ -81,6 +87,7 @@ class WhiteboardBeat:
     visual: str = "text"
     label: str = ""
     image_path: str = ""
+    svg_path: str = ""
     audio_path: str = ""
     duration: float = 3.0
 

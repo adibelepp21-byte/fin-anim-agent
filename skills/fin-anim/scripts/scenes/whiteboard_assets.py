@@ -23,6 +23,19 @@ tools/colab_generate_icons.ipynb) has no vector path to trace, so
 opaque cover rectangle shrinks away rather than the image being "drawn". This
 is a deliberate, different-looking reveal from the vector path-tracing above,
 not a bug: raster and vector visuals can't share one animation technique.
+
+A beat can also use visual "svg": an `SVGMobject` (a free CC0 scene illustration
+from undraw.co, or anything else with real vector paths) is itself a VGroup of
+plain-primitive-like paths, so it's traced exactly like a built-in icon via
+`draw_icon_with_hand` — no separate reveal technique needed. This is the route
+to a richer multi-element "scene" (a person + an object + their interaction) in
+one beat, since the composition already lives inside the SVG file.
+
+The hand itself is swappable: `make_hand_cursor()` (the default stylized
+vector sketch) or `make_photo_hand_cursor()` (a realistic hand-and-pencil PNG,
+also from tools/colab_generate_icons.ipynb) both expose the same `tip_position`
+attribute, so `draw_icon_with_hand` and `reveal_image_with_hand` work
+identically no matter which one is passed in.
 """
 from __future__ import annotations
 
@@ -93,6 +106,38 @@ def make_hand_cursor() -> VGroup:
 
     hand = VGroup(pen_shaft, fist, thumb, fingers, pen_tip)
     hand.tip_position = ORIGIN
+    return hand
+
+
+# Default pencil-tip position within a generated hand photo, as a fraction of
+# (half-width, half-height) from the image's center — e.g. (-0.35, 0.4) means
+# 35% of the way from center to the left edge, 40% of the way up from center.
+# Matches the framing tools/colab_generate_icons.ipynb's hand prompt asks for
+# ("holding a pencil at a 45-degree angle, tip toward the upper-left"). If your
+# generated hand.png has the tip somewhere else, recalibrate this by opening
+# the image, reading the tip's pixel position, and converting to this
+# center-relative fraction — see tools/colab_generate_icons.ipynb's hand
+# section for the exact steps.
+DEFAULT_PHOTO_HAND_TIP_FRACTION = (-0.35, 0.4)
+
+
+def make_photo_hand_cursor(image_path: str, tip_fraction: tuple[float, float] = DEFAULT_PHOTO_HAND_TIP_FRACTION):
+    """Loads a realistic hand-and-pencil PNG (see tools/colab_generate_icons.ipynb)
+    as the drawing cursor instead of the stylized vector make_hand_cursor(). Sets
+    up the same `tip_position` attribute so draw_icon_with_hand/reveal_image_with_hand
+    work identically regardless of which hand mobject is passed in — both just
+    `.shift()` the mobject and track `.tip_position`, and ImageMobject supports
+    `.shift()` exactly like VGroup does.
+    """
+    from manim import ImageMobject  # local import: only this function needs it
+
+    hand = ImageMobject(image_path)
+    if hand.width > 3:
+        hand.scale_to_fit_width(3)
+
+    fx, fy = tip_fraction
+    tip_offset = hand.width / 2 * fx * RIGHT + hand.height / 2 * fy * UP
+    hand.tip_position = hand.get_center() + tip_offset
     return hand
 
 
