@@ -24,12 +24,14 @@ from scenes.bar_comparison import BarComparisonScene
 from scenes.candlestick import CandlestickScene
 from scenes.kpi_counter import KPICounterScene
 from scenes.price_line import PriceLineScene
+from scenes.whiteboard_explainer import WhiteboardExplainerScene
 
 SCENE_CLASSES = {
     "price_line": PriceLineScene,
     "candlestick": CandlestickScene,
     "bar_comparison": BarComparisonScene,
     "kpi_counter": KPICounterScene,
+    "whiteboard_explainer": WhiteboardExplainerScene,
 }
 
 QUALITY_FLAGS = {

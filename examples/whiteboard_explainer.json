@@ -1,0 +1,26 @@
+{
+  "kind": "whiteboard_explainer",
+  "title": "What Is Compound Interest?",
+  "subtitle": "",
+  "source": "example data",
+  "beats": [
+    {
+      "narration": "Compound interest means your money earns interest, and then that interest earns interest too.",
+      "visual": "piggy_bank",
+      "label": "Save $100",
+      "duration": 4.5
+    },
+    {
+      "narration": "Over time, even small amounts grow much faster than you'd expect.",
+      "visual": "clock",
+      "label": "Time + Growth",
+      "duration": 4.0
+    },
+    {
+      "narration": "That's why starting early, even with a little, beats starting late with a lot.",
+      "visual": "chart_bar",
+      "label": "Start Early",
+      "duration": 4.0
+    }
+  ]
+}

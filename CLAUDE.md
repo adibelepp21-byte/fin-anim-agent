@@ -2,8 +2,9 @@
 
 ## Project
 
-fin-anim-agent — a Claude Code skill (`/fin-anim`) that turns financial data into
-short 2D animated explainer videos using Manim. Repo: adibelepp21-byte/fin-anim-agent.
+fin-anim-agent — a Claude Code skill (`/fin-anim`) that turns financial data and
+concepts into short 2D animated videos using Manim. Repo:
+adibelepp21-byte/fin-anim-agent.
 
 ## Structure
 
@@ -11,14 +12,25 @@ short 2D animated explainer videos using Manim. Repo: adibelepp21-byte/fin-anim-
   skill fires. This is the single source of truth for behavior — keep code and this
   file in sync.
 - `skills/fin-anim/scripts/schema.py` — `SceneData` dataclass, the one data contract
-  every scene kind and every data source must produce.
+  every scene kind and every data source must produce. Also holds `WHITEBOARD_ICONS`
+  (the canonical icon-name list) and `WhiteboardBeat`.
 - `skills/fin-anim/scripts/data_loader.py` — loads a JSON file, validates it against
-  `REQUIRED_FIELDS` for its `kind` before any rendering starts.
+  `REQUIRED_FIELDS` for its `kind` before any rendering starts, plus kind-specific
+  checks (e.g. `whiteboard_explainer` beats: known icon name, non-empty `label`).
 - `skills/fin-anim/scripts/scenes/` — one `manim.Scene` subclass per scene kind
-  (`price_line`, `candlestick`, `bar_comparison`, `kpi_counter`). Each takes its data
-  via a class-level `data: SceneData = None` slot set by `build.py`, not via
-  `__init__`, since Manim's own scene construction doesn't accept constructor args.
+  (`price_line`, `candlestick`, `bar_comparison`, `kpi_counter`,
+  `whiteboard_explainer`). Each takes its data via a class-level
+  `data: SceneData = None` slot set by `build.py`, not via `__init__`, since Manim's
+  own scene construction doesn't accept constructor args.
+- `skills/fin-anim/scripts/scenes/whiteboard_assets.py` — colors, the marker-cursor
+  mobject, the doodle icon library (one `_icon_<name>()` builder per icon, all built
+  from Manim primitives — no external SVG/image assets), and `draw_with_hand()`, the
+  Create()-plus-cursor-sweep helper every beat's visual uses. Imports manim, so it
+  stays out of `tests/` (see Rules).
 - `skills/fin-anim/scripts/build.py` — CLI orchestrator: JSON data in, MP4 out.
+- `skills/fin-anim/scripts/audio_duration.py` — thin `ffprobe` wrapper; measures a
+  narration clip's real duration so `whiteboard_explainer` beats can be timed to their
+  voiceover instead of guessed from word count.
 - `examples/` — one valid data file per scene kind, used by both manual testing and
   `tests/test_schema_and_loader.py`.
 - `tests/` — schema/validation tests only. Deliberately excludes Manim rendering (no
@@ -29,6 +41,7 @@ short 2D animated explainer videos using Manim. Repo: adibelepp21-byte/fin-anim-
 - `pip install -r requirements.txt` — install manim + pytest
 - `pytest tests/ -v` — run the schema/validation test suite
 - `python3 skills/fin-anim/scripts/build.py --data <file>.json --output out/<name>.mp4 --quality m` — render
+- `python3 skills/fin-anim/scripts/audio_duration.py <file>.mp3` — print a clip's duration in seconds
 
 ## Conventions
 
@@ -48,11 +61,26 @@ short 2D animated explainer videos using Manim. Repo: adibelepp21-byte/fin-anim-
 
 ## Rules
 
-- Never fabricate financial data — if live data isn't available and the user hasn't
-  supplied numbers, ask; don't render a plausible-looking series.
+- Never fabricate financial data or narration — if live data isn't available and the
+  user hasn't supplied numbers, ask; don't render a plausible-looking series. Same for
+  `whiteboard_explainer` scripts: don't invent a "fact" about compound interest etc.
+  that wasn't asked for or verified.
 - Keep `tests/` free of a `manim` import — rendering correctness is verified manually
   (`build.py` against `examples/`), not in the fast test suite. If manim rendering
-  tests are added later, put them in a separate opt-in suite, not `tests/`.
-- This skill only does data → animation. Voiceover and multi-scene compositing are
-  explicitly out of scope — hand off to the `elevenlabs` / `remotion` skills instead
-  of reimplementing that here.
+  tests are added later, put them in a separate opt-in suite, not `tests/`. This is
+  why `WHITEBOARD_ICONS` lives in `schema.py` (manim-free) rather than being derived
+  from `whiteboard_assets.py` (which imports manim) — `data_loader.py` needs to
+  validate icon names without pulling manim into the test suite.
+- For the four data-chart kinds, voiceover and multi-scene compositing stay out of
+  scope — hand off to the `elevenlabs` / `remotion` skills. `whiteboard_explainer` is
+  the one exception: it owns per-beat narration generation (via `elevenlabs`) and
+  timing (via `audio_duration.py`) as part of its own workflow (SKILL.md Step 1b),
+  because the animation's pacing is *derived from* the voiceover, not layered on
+  after — that's not "reimplementing elevenlabs", it's using its output as timing
+  input.
+- The whiteboard hand is a stylized marker-cursor sweeping each visual's bounding box
+  diagonally, not a hand tracing the actual doodle strokes, and the doodle icons are
+  built from Manim primitives, not illustrated assets — both are deliberate v1
+  simplifications documented in `whiteboard_assets.py`'s module docstring. A real hand
+  illustration and true path-tracing are reasonable v2 upgrades, not bugs to "fix"
+  reflexively.

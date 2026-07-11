@@ -1,7 +1,8 @@
 # fin-anim-agent
 
-A Claude Code skill that turns financial data — live market data or numbers you give
-it — into short 2D animated explainer videos, rendered with [Manim](https://www.manim.community/).
+A Claude Code skill that turns financial data and concepts — live market data, numbers
+you give it, or a concept to teach — into short 2D animated videos, rendered with
+[Manim](https://www.manim.community/).
 
 Ask it things like:
 
@@ -9,11 +10,12 @@ Ask it things like:
 - "Make a KPI reveal video: Q3 revenue $4.2B, up 12.4%"
 - "Animate a candlestick chart for AAPL's last 5 sessions"
 - "Compare revenue by segment as an animated bar chart"
+- "Make a whiteboard animation explaining compound interest"
 
 ## How it works
 
 ```
-financial data (MCP fetch or manual input)
+financial data or concept (MCP fetch, manual input, or a concept to teach)
         │
         ▼
   scripts/schema.py     ← one JSON shape for every scene kind
@@ -28,9 +30,11 @@ financial data (MCP fetch or manual input)
   scripts/build.py       ← renders to MP4, quality l/m/h
 ```
 
-Four scene kinds today: `price_line`, `candlestick`, `bar_comparison`, `kpi_counter`.
-See `skills/fin-anim/SKILL.md` for the full spec the agent follows, and `examples/`
-for a sample data file per kind.
+Five scene kinds today: `price_line`, `candlestick`, `bar_comparison`, `kpi_counter`,
+and `whiteboard_explainer` (a narrated, hand-drawn-doodle-style explainer for financial
+concepts — compound interest, inflation, diversification, and the like — with
+per-beat voiceover synced via the `elevenlabs` skill). See `skills/fin-anim/SKILL.md`
+for the full spec the agent follows, and `examples/` for a sample data file per kind.
 
 ## Install
 
@@ -68,18 +72,32 @@ pytest tests/ -v
 - `skills/fin-anim/scripts/schema.py` — the data contract (`SceneData`) every scene reads
 - `skills/fin-anim/scripts/data_loader.py` — loads + validates a JSON data file
 - `skills/fin-anim/scripts/scenes/` — one Manim `Scene` subclass per scene kind
+- `skills/fin-anim/scripts/scenes/whiteboard_assets.py` — shared doodle-icon library,
+  marker-cursor mobject, and draw-while-tracking-cursor helper for `whiteboard_explainer`
 - `skills/fin-anim/scripts/build.py` — CLI: JSON in, MP4 out
+- `skills/fin-anim/scripts/audio_duration.py` — measures a narration clip's real length
+  via ffprobe, for timing `whiteboard_explainer` beats to their voiceover
 - `examples/` — one sample data file per scene kind
 - `tests/` — schema/validation tests (fast, no Manim import)
 
 ## Adding a new scene kind
 
 1. Extend `SceneKind` and `SceneData` in `schema.py`.
-2. Add its required-field entry to `REQUIRED_FIELDS` in `data_loader.py`.
+2. Add its required-field entry (and any kind-specific validation) to
+   `data_loader.py`.
 3. Add a `scripts/scenes/<kind>.py` with a `Scene` subclass following the existing
    pattern (`data: SceneData = None`, read `self.data` in `construct()`).
 4. Register it in `SCENE_CLASSES` in `build.py`.
 5. Add an example file under `examples/` and a test in `tests/`.
+
+## Adding a new whiteboard doodle icon
+
+1. Add an `_icon_<name>()` builder to `scripts/scenes/whiteboard_assets.py`, built from
+   Manim primitives (`Circle`, `Rectangle`, `Line`, `Arc`, ...) — no external SVG/image
+   assets, keeps the skill self-contained.
+2. Register it in `_ICON_BUILDERS` in the same file.
+3. Add the same name to `WHITEBOARD_ICONS` in `schema.py` — an assertion at import time
+   checks these two lists stay in sync.
 
 ## License
 
