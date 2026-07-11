@@ -22,11 +22,13 @@ adibelepp21-byte/fin-anim-agent.
   `whiteboard_explainer`). Each takes its data via a class-level
   `data: SceneData = None` slot set by `build.py`, not via `__init__`, since Manim's
   own scene construction doesn't accept constructor args.
-- `skills/fin-anim/scripts/scenes/whiteboard_assets.py` — colors, the marker-cursor
-  mobject, the doodle icon library (one `_icon_<name>()` builder per icon, all built
-  from Manim primitives — no external SVG/image assets), and `draw_with_hand()`, the
-  Create()-plus-cursor-sweep helper every beat's visual uses. Imports manim, so it
-  stays out of `tests/` (see Rules).
+- `skills/fin-anim/scripts/scenes/whiteboard_assets.py` — colors, `make_hand_cursor()`
+  (the stylized hand-and-pen mobject), the doodle icon library (one `_icon_<name>()`
+  builder per icon, all built from Manim primitives — no external SVG/image assets),
+  and `draw_icon_with_hand()`, which flattens a beat's visual into its leaf shapes and
+  draws them one at a time with the hand's pen tip tracing each leaf's own
+  `point_from_proportion(alpha)` path. Imports manim, so it stays out of `tests/` (see
+  Rules).
 - `skills/fin-anim/scripts/build.py` — CLI orchestrator: JSON data in, MP4 out.
 - `skills/fin-anim/scripts/audio_duration.py` — thin `ffprobe` wrapper; measures a
   narration clip's real duration so `whiteboard_explainer` beats can be timed to their
@@ -78,9 +80,15 @@ adibelepp21-byte/fin-anim-agent.
   because the animation's pacing is *derived from* the voiceover, not layered on
   after — that's not "reimplementing elevenlabs", it's using its output as timing
   input.
-- The whiteboard hand is a stylized marker-cursor sweeping each visual's bounding box
-  diagonally, not a hand tracing the actual doodle strokes, and the doodle icons are
-  built from Manim primitives, not illustrated assets — both are deliberate v1
-  simplifications documented in `whiteboard_assets.py`'s module docstring. A real hand
-  illustration and true path-tracing are reasonable v2 upgrades, not bugs to "fix"
-  reflexively.
+- The whiteboard hand traces each leaf shape's real path (`point_from_proportion`) —
+  it is not a bounding-box sweep. What IS still a deliberate simplification: the hand
+  itself is a stylized sketch (fist + 3 fingers + thumb + pen, all Manim primitives),
+  not an anatomically detailed illustration, and the doodle icons are primitive shapes,
+  not illustrated assets. Both are documented in `whiteboard_assets.py`'s module
+  docstring — don't "fix" them reflexively as if they were bugs.
+- `draw_icon_with_hand` divides `total_run_time` evenly across however many leaf shapes
+  a beat's visual flattens into (an icon's shapes AND a Text label's individual glyph
+  paths both count as leaves). A short caption on a multi-part icon reads as
+  deliberate handwriting; a long caption can end up with a very small per-glyph
+  `run_time` and look like a fast scribble — keep beat `label`s to a few words (already
+  the rule per SKILL.md) rather than compensating for this in the renderer.

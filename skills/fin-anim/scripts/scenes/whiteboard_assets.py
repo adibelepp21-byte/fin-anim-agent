@@ -1,17 +1,21 @@
-"""Shared whiteboard-style building blocks: colors, marker-cursor mobject,
-doodle icon library, and the draw-while-tracking-cursor helper.
+"""Shared whiteboard-style building blocks: colors, the hand-and-pen mobject,
+doodle icon library, and the draw-while-tracing-path helper.
 
-v1 simplification #1: the "hand" is a stylized marker-tip cursor (an angled
-shaft + round tip), not an illustrated hand — a full hand-and-pen illustration
-is a natural follow-up, not required for the whiteboard *feel* this scene is
-after.
+The hand is a stylized sketch (fist + fingers + thumb + pen), not an
+anatomically detailed illustration — that's a deliberate simplification, not a
+missing feature; a rougher-but-legible hand is what most real whiteboard-video
+tools use too, and it's what reads clearly at the small size a hand-plus-doodle
+composition renders at.
 
-v1 simplification #2: the cursor sweeps linearly across each visual's
-bounding box rather than tracing its exact stroke path. Point-for-point path
-tracking across a VGroup made of several unrelated shapes (a clock's face +
-hour hand + minute hand, say) isn't reliably exposed as one continuous path by
-Manim's VMobject API — a diagonal sweep synced to the same Create() already
-reads convincingly as "drawing this" without that complexity.
+Path tracing is per-leaf-shape, not per-icon: `build_icon()` returns a VGroup
+whose children are plain primitives (Circle, Line, Ellipse, Rectangle,
+Triangle, Arc) or nested VGroups of those (e.g. piggy_bank's two legs). Each
+*leaf* primitive is a single continuous VMobject path, so `draw_icon_with_hand`
+flattens the tree and draws one leaf at a time, moving the hand's pen tip along
+that leaf's own `point_from_proportion(alpha)` — real per-stroke tracing, not a
+bounding-box sweep. The same function draws "text" beats too, since Manim's
+Text is itself a VGroup of one-path-per-glyph submobjects — for a short label
+this looks like the hand actually handwriting it letter by letter.
 """
 from __future__ import annotations
 
@@ -24,6 +28,7 @@ from manim import (
     UP,
     Arc,
     Circle,
+    Create,
     Ellipse,
     Line,
     Rectangle,
@@ -40,30 +45,83 @@ from schema import WHITEBOARD_ICONS
 WHITEBOARD_COLOR = "#FAF7F0"
 MARKER_COLOR = "#2B2B2B"
 ACCENT_COLOR = "#1F5FBF"
+SKIN_COLOR = "#E8B48C"
 
-CURSOR_OFFSET = UP * 0.15 + RIGHT * 0.15
-
-
-def make_cursor() -> VGroup:
-    """A simple marker-tip cursor: a short angled shaft with a round accent tip."""
-    shaft = Line(DOWN * 0.5 + LEFT * 0.15, UP * 0.5 + RIGHT * 0.15, color=MARKER_COLOR, stroke_width=10)
-    tip = Circle(radius=0.08, color=ACCENT_COLOR, fill_color=ACCENT_COLOR, fill_opacity=1)
-    tip.move_to(DOWN * 0.5 + LEFT * 0.15)
-    return VGroup(shaft, tip)
+# Small nudge so the pen-tip circle sits just past the ink rather than
+# dead-centered on top of it (which would visually hide the stroke's leading edge).
+TIP_NUDGE = UP * 0.03 + RIGHT * 0.02
 
 
-def draw_with_hand(scene, mobject, cursor: VGroup, run_time: float) -> None:
-    """Plays Create(mobject) while cursor sweeps diagonally across its bounding box."""
-    from manim import Create  # local import keeps the public import list above minimal
+def make_hand_cursor() -> VGroup:
+    """Builds a stylized hand-holding-a-pen. The pen tip sits at local (0, 0, 0)
+    at construction time — `draw_icon_with_hand` tracks that point via the
+    `tip_position` attribute set here, updating it (and shifting the whole
+    group rigidly) every time the hand moves, so the fist/fingers/pen shaft
+    always carry along together instead of only the tip snapping to place.
+    """
+    pen_tip = Circle(radius=0.06, color=ACCENT_COLOR, fill_color=ACCENT_COLOR, fill_opacity=1)
+    pen_shaft = Line(ORIGIN, UP * 0.55 + RIGHT * 0.22, color="#3A3A3A", stroke_width=14)
 
-    start = mobject.get_corner(UP + LEFT) + CURSOR_OFFSET
-    end = mobject.get_corner(DOWN + RIGHT) + CURSOR_OFFSET
-    cursor.move_to(start)
+    fist = Ellipse(
+        width=0.5, height=0.36, color=MARKER_COLOR, fill_color=SKIN_COLOR, fill_opacity=1, stroke_width=2
+    )
+    fist.move_to(UP * 0.62 + RIGHT * 0.22)
 
-    def update_cursor(mob, alpha):
-        mob.move_to(start + (end - start) * alpha)
+    thumb = Ellipse(
+        width=0.22, height=0.14, color=MARKER_COLOR, fill_color=SKIN_COLOR, fill_opacity=1, stroke_width=2
+    )
+    thumb.move_to(fist.get_center() + LEFT * 0.18 + DOWN * 0.06)
+    thumb.rotate(0.4)
 
-    scene.play(Create(mobject), UpdateFromAlphaFunc(cursor, update_cursor), run_time=run_time)
+    fingers = VGroup(
+        *[
+            Ellipse(
+                width=0.16, height=0.3, color=MARKER_COLOR, fill_color=SKIN_COLOR, fill_opacity=1, stroke_width=2
+            )
+            .move_to(fist.get_center() + UP * 0.2 + RIGHT * (i * 0.14 - 0.14))
+            .rotate(0.18 * (i - 1))
+            for i in range(3)
+        ]
+    )
+
+    hand = VGroup(pen_shaft, fist, thumb, fingers, pen_tip)
+    hand.tip_position = ORIGIN
+    return hand
+
+
+def _flatten_vmobjects(mobject) -> list:
+    """Returns the leaf drawable shapes inside a (possibly nested) VGroup, in
+    the order they were added. Each leaf is a single continuous path that
+    `point_from_proportion` can trace exactly."""
+    if not mobject.submobjects:
+        return [mobject]
+    leaves: list = []
+    for sub in mobject.submobjects:
+        leaves.extend(_flatten_vmobjects(sub))
+    return leaves
+
+
+def draw_icon_with_hand(scene, icon, hand: VGroup, total_run_time: float) -> None:
+    """Draws each leaf shape inside `icon` in sequence, moving `hand` so its pen
+    tip traces the point currently being drawn — real per-stroke tracing, one
+    shape at a time, rather than one Create() for the whole icon at once."""
+    leaves = _flatten_vmobjects(icon)
+    if not leaves:
+        return
+
+    per_leaf_time = max(total_run_time / len(leaves), 0.06)
+
+    for leaf in leaves:
+        start_point = leaf.point_from_proportion(0) + TIP_NUDGE
+        hand.shift(start_point - hand.tip_position)
+        hand.tip_position = start_point
+
+        def update_hand(mob, alpha, leaf=leaf):
+            target = leaf.point_from_proportion(alpha) + TIP_NUDGE
+            mob.shift(target - mob.tip_position)
+            mob.tip_position = target
+
+        scene.play(Create(leaf), UpdateFromAlphaFunc(hand, update_hand), run_time=per_leaf_time)
 
 
 def build_icon(name: str) -> VGroup:

@@ -6,7 +6,13 @@ hold it on screen for the rest of the narration, wipe it, draw the next thing.
 from manim import DOWN, UP, Create, FadeOut, Scene, Text, VGroup
 
 from schema import SceneData
-from scenes.whiteboard_assets import MARKER_COLOR, WHITEBOARD_COLOR, build_icon, draw_with_hand, make_cursor
+from scenes.whiteboard_assets import (
+    MARKER_COLOR,
+    WHITEBOARD_COLOR,
+    build_icon,
+    draw_icon_with_hand,
+    make_hand_cursor,
+)
 
 HANDWRITING_FONT = "Kalam"  # a handwriting Google Font if installed; Pango silently
 # substitutes a default font if it isn't, so this never crashes on a bare system.
@@ -34,19 +40,23 @@ class WhiteboardExplainerScene(Scene):
         self.wait(0.5)
         self.play(FadeOut(title), run_time=0.5)
 
-        cursor = make_cursor()
+        hand = make_hand_cursor()
 
         for beat in data.beats:
             visual = self._build_visual(beat)
-            draw_time = max(0.8, min(beat.duration * 0.5, 3.0))
+            # Drawing spans virtually the whole beat so the hand is still
+            # visibly writing/drawing for as long as the narration is talking,
+            # rather than finishing quickly and sitting still through the rest
+            # of the audio. The small remainder is just a settle beat before wipe.
+            draw_time = max(1.0, beat.duration - 0.3)
             hold_time = max(0.0, beat.duration - draw_time)
 
             if beat.audio_path:
                 self.add_sound(beat.audio_path, time_offset=0)
 
-            self.add(cursor)
-            draw_with_hand(self, visual, cursor, run_time=draw_time)
-            self.remove(cursor)
+            self.add(hand)
+            draw_icon_with_hand(self, visual, hand, total_run_time=draw_time)
+            self.remove(hand)
 
             if hold_time > 0:
                 self.wait(hold_time)
