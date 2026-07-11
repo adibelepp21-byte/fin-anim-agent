@@ -1,0 +1,11 @@
+{
+  "kind": "kpi_counter",
+  "title": "Q3 FY26 Earnings",
+  "subtitle": "",
+  "ticker": "ACME",
+  "currency": "USD",
+  "source": "example data",
+  "kpi_label": "Revenue ($B)",
+  "kpi_value": 4.2,
+  "kpi_delta_pct": 12.4
+}

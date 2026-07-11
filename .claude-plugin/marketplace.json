@@ -1,0 +1,12 @@
+{
+  "name": "fin-anim-agent",
+  "owner": {
+    "name": "adibelepp21-byte"
+  },
+  "plugins": [
+    {
+      "name": "fin-anim-agent",
+      "source": "."
+    }
+  ]
+}

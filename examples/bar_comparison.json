@@ -1,0 +1,12 @@
+{
+  "kind": "bar_comparison",
+  "title": "Revenue by Segment — Q3 FY26",
+  "subtitle": "USD millions",
+  "source": "example data",
+  "bars": [
+    {"label": "Cloud", "value": 1820.5},
+    {"label": "Devices", "value": 940.2},
+    {"label": "Services", "value": 1310.8},
+    {"label": "Ads", "value": 610.4}
+  ]
+}

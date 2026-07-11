@@ -1,0 +1,15 @@
+{
+  "kind": "price_line",
+  "title": "NVDA — Last 6 Sessions",
+  "subtitle": "Daily close, USD",
+  "ticker": "NVDA",
+  "currency": "USD",
+  "source": "example data",
+  "points": [
+    {"date": "Mon", "value": 118.2},
+    {"date": "Tue", "value": 121.4},
+    {"date": "Wed", "value": 119.8},
+    {"date": "Thu", "value": 124.1},
+    {"date": "Fri", "value": 129.6}
+  ]
+}

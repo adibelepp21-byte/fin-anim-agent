@@ -1,0 +1,9 @@
+{
+  "name": "fin-anim-agent",
+  "version": "0.1.0",
+  "description": "Generates 2D animated videos explaining financial data (price trends, candlesticks, KPI reveals, category comparisons) using Manim.",
+  "author": {
+    "name": "adibelepp21-byte"
+  },
+  "skills": "./skills"
+}

@@ -1,0 +1,15 @@
+{
+  "kind": "candlestick",
+  "title": "AAPL — 5 Day OHLC",
+  "subtitle": "Daily candles, USD",
+  "ticker": "AAPL",
+  "currency": "USD",
+  "source": "example data",
+  "candles": [
+    {"date": "Mon", "open": 189.5, "high": 191.2, "low": 188.9, "close": 190.8},
+    {"date": "Tue", "open": 190.8, "high": 193.0, "low": 190.1, "close": 192.4},
+    {"date": "Wed", "open": 192.4, "high": 192.9, "low": 189.0, "close": 189.7},
+    {"date": "Thu", "open": 189.7, "high": 191.5, "low": 188.2, "close": 191.0},
+    {"date": "Fri", "open": 191.0, "high": 195.3, "low": 190.6, "close": 194.8}
+  ]
+}
